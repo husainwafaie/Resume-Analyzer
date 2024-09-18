@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function ResumeAnalyzer() {
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
-  const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
@@ -21,43 +22,26 @@ function ResumeAnalyzer() {
       setError('Please upload a resume and enter a job description.');
       return;
     }
-  
+
     const formData = new FormData();
     formData.append('files', file);
-  
+
     try {
       // First, extract text from the resume
       const extractResponse = await fetch('http://localhost:8000/extract-text/', {
         method: 'POST',
         body: formData,
       });
-  
+
       if (!extractResponse.ok) {
         throw new Error('Failed to extract text from resume');
       }
-  
+
       const extractResult = await extractResponse.json();
       const resumeText = extractResult.texts[0];
-  
-      // Then, compare keywords
-      const compareResponse = await fetch('http://localhost:8000/compare-keywords/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          resume_text: resumeText,
-          job_description: jobDescription,
-        }),
-      });
-  
-      if (!compareResponse.ok) {
-        throw new Error('Failed to compare keywords');
-      }
-  
-      const result = await compareResponse.json();
-      setAnalysisResult(result);
-      setError('');
+
+      // Navigate to results page with the necessary data
+      navigate('/results', { state: { resumeText, jobDescription } });
     } catch (err) {
       setError('An error occurred during analysis. Please try again.');
       console.error(err);
@@ -79,13 +63,6 @@ function ResumeAnalyzer() {
         Analyze Resume
       </button>
       {error && <div className="alert alert-danger mt-3">{error}</div>}
-      {analysisResult && (
-        <div className="mt-3">
-          <h3>Analysis Results:</h3>
-          <p>Matching Keywords: {analysisResult.matching_keywords.join(', ')}</p>
-          <p>Missing Keywords: {analysisResult.missing_keywords.join(', ')}</p>
-        </div>
-      )}
     </div>
   );
 }
