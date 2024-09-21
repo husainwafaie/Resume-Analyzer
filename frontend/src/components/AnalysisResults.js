@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faTimesCircle, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { useSpring, animated } from 'react-spring';
+import { TypeAnimation } from 'react-type-animation';
 import './AnalysisResults.css';
 
 function AnalysisResults() {
@@ -11,6 +13,9 @@ function AnalysisResults() {
   const location = useLocation();
   const navigate = useNavigate();
   const { resumeText, jobDescription } = location.state || {};
+
+  const [showKeywords, setShowKeywords] = useState(false);
+  const [currentFeedbackIndex, setCurrentFeedbackIndex] = useState(-1);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -66,6 +71,27 @@ function AnalysisResults() {
     return `rgb(${red}, ${green}, 0)`;
   };
 
+  const progressBarAnimation = useSpring({
+    width: `${analysisResult ? analysisResult.similarity * 100 : 0}%`,
+    from: { width: '0%' },
+    config: { duration: 1100 },
+    onRest: () => setShowKeywords(true),
+  });
+
+  const keywordsAnimation = useSpring({
+    opacity: showKeywords ? 1 : 0,
+    transform: showKeywords ? 'translateY(0)' : 'translateY(20px)',
+    config: { duration: 1000 },
+    delay: 500,
+    onRest: () => setCurrentFeedbackIndex(0),
+  });
+
+  const handleTypingComplete = () => {
+    if (currentFeedbackIndex < analysisResult.feedback.length - 1) {
+      setCurrentFeedbackIndex(prevIndex => prevIndex + 1);
+    }
+  };
+
   if (loading) {
     return <div className="loader-container"><div className="loader"></div></div>;
   }
@@ -86,17 +112,17 @@ function AnalysisResults() {
                 </span>
               </div>
               <div className="progress-bar-container">
-                <div 
+                <animated.div 
                   className="progress-bar"
                   style={{
-                    width: `${analysisResult.similarity * 100}%`,
+                    ...progressBarAnimation,
                     backgroundColor: getProgressBarColor(analysisResult.similarity)
                   }}
-                ></div>
+                ></animated.div>
               </div>
             </section>
 
-            <section className="keywords-section">
+            <animated.section className="keywords-section" style={keywordsAnimation}>
               <h2 className="section-title" style={{ marginBottom: '2rem' }}>Keyword Analysis</h2>
               <div className="keyword-lists">
                 <div className="keyword-list">
@@ -120,13 +146,30 @@ function AnalysisResults() {
                   </div>
                 </div>
               </div>
-            </section>
+            </animated.section>
 
             <section className="feedback-section">
               <h2 className="section-title">Feedback</h2>
               <ul className="feedback-list">
                 {analysisResult.feedback.map((item, index) => (
-                  <li key={index} className="feedback-item">{item}</li>
+                  <li key={index} className="feedback-item">
+                    {index === currentFeedbackIndex ? (
+                      <TypeAnimation
+                        sequence={[
+                          item,
+                          500,
+                          handleTypingComplete
+                        ]}
+                        wrapper="span"
+                        cursor={true}
+                        repeat={0}
+                        speed={80}
+                        style={{ display: 'inline-block' }}
+                      />
+                    ) : index < currentFeedbackIndex ? (
+                      item
+                    ) : null}
+                  </li>
                 ))}
               </ul>
             </section>
