@@ -1,15 +1,16 @@
-from pdfminer.high_level import extract_text
+import PyPDF2
 import docx
 import io
 
-# Function to extract text from PDF files
-def extract_text_from_pdf(file):
-    # Convert SpooledTemporaryFile to BytesIO
-    pdf_file = io.BytesIO(file.read())
-    text = extract_text(pdf_file)
+def extract_text_from_pdf(file_contents):
+    # Wrap the byte content in a BytesIO object to enable seek operations
+    pdf_file = io.BytesIO(file_contents)
+    reader = PyPDF2.PdfReader(pdf_file)
+    text = ''
+    for page in reader.pages:
+        text += page.extract_text()
     return text
 
-# Function to extract text from DOCX files
-def extract_text_from_docx(file):
-    doc = docx.Document(file)
-    return "\n".join([para.text for para in doc.paragraphs])
+def extract_text_from_docx(file_contents):
+    doc = docx.Document(file_contents)
+    return '\n'.join([para.text for para in doc.paragraphs])
