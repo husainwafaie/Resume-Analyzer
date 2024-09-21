@@ -1,95 +1,127 @@
-import spacy
+import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-from collections import Counter
+from nltk.stem import WordNetLemmatizer
+from nltk import pos_tag, word_tokenize
+import nltk
 
-# Load the spaCy English NLP model
-nlp = spacy.load("en_core_web_sm")
+# Initialize the WordNet Lemmatizer for keyword normalization
+lemmatizer = WordNetLemmatizer()
 
-def preprocess_text(text):
-    doc = nlp(text.lower())
-    result = []
-    for token in doc:
-        if token.text in nlp.Defaults.stop_words:
-            continue
-        if token.is_punct:
-            continue
-        if token.lemma_ == '-PRON-':
-            continue
-        if len(token.text) < 2:
-            continue
-        if token.pos_ in ['NOUN', 'PROPN', 'VERB', 'ADJ']:
-            result.append(token.lemma_)
-    return " ".join(result)
+def clean_and_lemmatize(text):
+    """
+    Cleans and lemmatizes the input text.
+    """
+    # Convert to lowercase, remove punctuation, and lemmatize words
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    words = text.split()
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
+    return ' '.join(lemmatized_words)
 
-def extract_keywords(text, comparison_text=None, top_n=30):
-    preprocessed_text = preprocess_text(text)
+def filter_keywords_by_pos(keywords):
+    """
+    Filters keywords to only include relevant nouns, verbs, and technical terms using POS tagging.
+    """
+    filtered_keywords = []
+    pos_tagged = pos_tag(keywords)
+
+    # Retain only nouns, verbs, or significant terms
+    for word, tag in pos_tagged:
+        if tag.startswith('NN') or tag.startswith('VB'):  # Nouns and Verbs
+            filtered_keywords.append(word)
     
-    if comparison_text:
-        preprocessed_comparison = preprocess_text(comparison_text)
-        corpus = [preprocessed_text, preprocessed_comparison]
+    return set(filtered_keywords)
+
+def extract_special_keywords(text, max_features=20):
+    """
+    Extracts the top keywords from a given text using TF-IDF with POS filtering.
+    """
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=max_features)
+    tfidf_matrix = vectorizer.fit_transform([text])
+    
+    feature_array = vectorizer.get_feature_names_out()
+    filtered_keywords = filter_keywords_by_pos(feature_array)
+    
+    return filtered_keywords
+
+def summarize_text(keywords, text_type="job description"):
+    """
+    Summarizes the key focus areas of the job description or resume based on extracted keywords.
+    """
+    if not keywords:
+        return f"The {text_type} does not provide enough specific details."
+    
+    summary = f"The main focus areas in the {text_type} are related to: {', '.join(keywords[:10])}."
+    
+    return summary
+
+def generate_comparison_feedback(matching_keywords, missing_keywords, resume_summary, job_summary):
+    """
+    Generates feedback comparing the resume and job description based on similarities and differences.
+    """
+    feedback = []
+    
+    # Summarize the job description
+    feedback.append("Job Description Summary: " + job_summary)
+    
+    # Summarize the resume
+    feedback.append("Resume Summary: " + resume_summary)
+    
+    # Highlight similarities
+    if matching_keywords:
+        feedback.append(f"Similarities: Your resume matches important areas mentioned in the job description, such as {', '.join(matching_keywords[:5])}. This shows that you have relevant experience in key areas.")
     else:
-        corpus = [preprocessed_text]
+        feedback.append("Similarities: There are no significant overlaps between your resume and the job description in terms of keywords.")
     
-    tfidf = TfidfVectorizer(max_features=100, token_pattern=r'\b\w+\b')
-    tfidf_matrix = tfidf.fit_transform(corpus)
+    # Highlight differences
+    if missing_keywords:
+        feedback.append(f"Differences: However, the job description emphasizes some areas that are missing from your resume, including {', '.join(missing_keywords[:5])}. Consider adding more details about these topics to better align with the job requirements.")
     
-    feature_names = np.array(tfidf.get_feature_names_out())
-    tfidf_scores = tfidf_matrix.toarray()[0]
-    
-    sorted_indexes = np.argsort(tfidf_scores)[::-1]
-    top_keywords = feature_names[sorted_indexes][:top_n]
-    
-    return list(top_keywords)
-
-def calculate_similarity(text1, text2):
-    preprocessed_text1 = preprocess_text(text1)
-    preprocessed_text2 = preprocess_text(text2)
-    
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform([preprocessed_text1, preprocessed_text2])
-    return cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-
-def extract_entities(text):
-    doc = nlp(text)
-    entities = [(ent.text, ent.label_) for ent in doc.ents]
-    return entities
+    return feedback
 
 def analyze_resume(resume_text, job_description):
-    similarity = calculate_similarity(resume_text, job_description)
+    # Clean and lemmatize both resume text and job description
+    cleaned_resume = clean_and_lemmatize(resume_text)
+    cleaned_job_description = clean_and_lemmatize(job_description)
 
-    resume_keywords = extract_keywords(resume_text, job_description)
-    job_keywords = extract_keywords(job_description, resume_text)
-    matching_keywords = set(resume_keywords).intersection(set(job_keywords))
-    missing_keywords = set(job_keywords) - set(resume_keywords)
-
-    resume_entities = extract_entities(resume_text)
-    job_entities = extract_entities(job_description)
-
-    feedback = []
-    if similarity < 0.3:
-        feedback.append("Your resume doesn't seem to match the job description very well. Consider tailoring it more specifically to the role.")
-    elif similarity < 0.6:
-        feedback.append("Your resume has some relevance to the job description, but there's room for improvement.")
+    # Extract keywords from cleaned and lemmatized texts
+    job_keywords = extract_special_keywords(cleaned_job_description)
+    #resume_keywords = extract_special_keywords(cleaned_resume)
+    resume_keywords = set(cleaned_resume.split(" "))
+    resume_keywords2 = extract_special_keywords(cleaned_resume)
+    
+    # Find matching and missing keywords
+    matching_keywords = job_keywords.intersection(resume_keywords)
+    missing_keywords = job_keywords.difference(resume_keywords)
+    
+    # Calculate similarity score using cleaned text
+    vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = vectorizer.fit_transform([cleaned_resume, cleaned_job_description])
+    
+    """
+    if tfidf_matrix.shape[1] > 0:
+        similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
     else:
-        feedback.append("Your resume appears to be well-tailored to the job description.")
+        similarity = 0.0  # Set similarity to 0 if no meaningful comparison is possible
+    """
+    similarity = len(matching_keywords) / len(job_keywords)
+    feedback = []
+    if len(missing_keywords) > 0:
+        feedback.append(f"Your resume is missing important keywords: {', '.join(missing_keywords)}")
+    if len(matching_keywords) == 0:
+        feedback.append("None of the job description keywords are present in your resume.")
 
-    if missing_keywords:
-        feedback.append(f"Consider adding these keywords to your resume: {', '.join(list(missing_keywords)[:5])}.")
+    # Generate summaries of the job description and resume
+    job_summary = summarize_text(list(job_keywords), "job description")
+    resume_summary = summarize_text(list(resume_keywords2), "resume")
 
-    if len(matching_keywords) < 5:
-        feedback.append("Try to include more relevant keywords from the job description in your resume.")
-
-    resume_skills = [ent[0].lower() for ent in resume_entities if ent[1] in ['SKILL', 'ORG', 'PRODUCT']]
-    job_skills = [ent[0].lower() for ent in job_entities if ent[1] in ['SKILL', 'ORG', 'PRODUCT']]
-    missing_skills = set(job_skills) - set(resume_skills)
-    if missing_skills:
-        feedback.append(f"The job description mentions these skills or technologies that are missing from your resume: {', '.join(list(missing_skills))}.")
+    # Generate comparison feedback
+    comparison_feedback = generate_comparison_feedback(list(matching_keywords), list(missing_keywords), resume_summary, job_summary)
 
     return {
         "similarity": similarity,
         "matching_keywords": list(matching_keywords),
         "missing_keywords": list(missing_keywords),
-        "feedback": feedback
+        "feedback": comparison_feedback,
     }

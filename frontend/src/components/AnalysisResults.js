@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheckCircle, faTimesCircle, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import './AnalysisResults.css';
 
 function AnalysisResults() {
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -50,34 +53,89 @@ function AnalysisResults() {
     navigate('/');
   };
 
+  const getSimilarityLabel = (similarity) => {
+    if (similarity < 0.25) return 'No Match';
+    if (similarity < 0.5) return 'Low Match';
+    if (similarity < 0.75) return 'Good Match';
+    return 'Perfect Match';
+  };
+
+  const getProgressBarColor = (similarity) => {
+    const red = Math.max(0, Math.min(255, 510 * (1 - similarity)));
+    const green = Math.max(0, Math.min(255, 510 * similarity));
+    return `rgb(${red}, ${green}, 0)`;
+  };
+
   if (loading) {
-    return <div className="text-center mt-5"><div className="spinner-border" role="status"></div></div>;
+    return <div className="loader-container"><div className="loader"></div></div>;
   }
 
   return (
-    <div className="card shadow-sm p-4">
-      <h2 className="mb-3">Analysis Results</h2>
-      {error && <div className="alert alert-danger">{error}</div>}
-      {analysisResult && (
-        <div>
-          <h3>Resume-Job Description Similarity</h3>
-          <p>Similarity Score: {(analysisResult.similarity * 100).toFixed(2)}%</p>
+    <div className="analysis-results-container">
+      <div className="card glass-effect">
+        <h1 className="title">Analysis Results</h1>
+        {error && <div className="alert alert-danger">{error}</div>}
+        {analysisResult && (
+          <div>
+            <section className="similarity-section">
+              <h2 className="section-title">Resume-Job Description Similarity</h2>
+              <div className="similarity-score">
+                <span className="score-value">{(analysisResult.similarity * 100).toFixed(2)}%</span>
+                <span className="score-label">
+                  {getSimilarityLabel(analysisResult.similarity)}
+                </span>
+              </div>
+              <div className="progress-bar-container">
+                <div 
+                  className="progress-bar"
+                  style={{
+                    width: `${analysisResult.similarity * 100}%`,
+                    backgroundColor: getProgressBarColor(analysisResult.similarity)
+                  }}
+                ></div>
+              </div>
+            </section>
 
-          <h3>Keyword Analysis</h3>
-          <h4>Matching Keywords:</h4>
-          <p>{analysisResult.matching_keywords.join(', ')}</p>
-          <h4>Missing Keywords:</h4>
-          <p>{analysisResult.missing_keywords.join(', ')}</p>
+            <section className="keywords-section">
+              <h2 className="section-title" style={{ marginBottom: '2rem' }}>Keyword Analysis</h2>
+              <div className="keyword-lists">
+                <div className="keyword-list">
+                  <h3 className="list-title">
+                    <FontAwesomeIcon icon={faCheckCircle} className="icon-match" /> Matching Keywords
+                  </h3>
+                  <div className="keyword-tags">
+                    {analysisResult.matching_keywords.map(keyword => 
+                      <span key={keyword} className="keyword-tag match">{keyword}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="keyword-list">
+                  <h3 className="list-title">
+                    <FontAwesomeIcon icon={faTimesCircle} className="icon-missing" /> Missing Keywords
+                  </h3>
+                  <div className="keyword-tags">
+                    {analysisResult.missing_keywords.map(keyword => 
+                      <span key={keyword} className="keyword-tag missing">{keyword}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
 
-          <h3>Feedback</h3>
-          <ul>
-            {analysisResult.feedback.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <button className="btn btn-secondary mt-3" onClick={handleGoBack}>Go Back</button>
+            <section className="feedback-section">
+              <h2 className="section-title">Feedback</h2>
+              <ul className="feedback-list">
+                {analysisResult.feedback.map((item, index) => (
+                  <li key={index} className="feedback-item">{item}</li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        )}
+        <button className="btn-back" onClick={handleGoBack}>
+          <FontAwesomeIcon icon={faArrowLeft} /> Go Back
+        </button>
+      </div>
     </div>
   );
 }
