@@ -63,19 +63,18 @@ body {
 }
 
 .progress-bar-container {
-  width: calc(100% - 40px); /* Subtracting 20px to account for left and right margins */
+  width: calc(100% - 20px);
   height: 20px;
   background-color: rgba(255, 255, 255, 0.4);
   border-radius: 10px;
   overflow: hidden;
-  margin: 0 20px 2rem 20px; /* Top: 0, Right: 10px, Bottom: 2rem, Left: 10px */
-  border: 1px solid black; /* Adding a thin black border */
+  margin: 0 10px 2rem 10px;
+  border: 1px solid black;
 }
 
 .progress-bar {
   height: 100%;
-  transition: width 0.5s ease-out;
-  border-radius: 10px; /* Matching the container's border radius */
+  border-radius: 10px;
 }
 
 .keyword-lists {
@@ -151,4 +150,9 @@ body {
 
 .btn-back:hover {
   background-color: rgba(255, 255, 255, 0.3);
+}
+
+.keywords-section {
+  opacity: 0;
+  transform: translateY(20px);
 }
