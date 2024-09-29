@@ -5,8 +5,10 @@ from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag, word_tokenize
 import nltk
 
+
 # Initialize the WordNet Lemmatizer for keyword normalization
 lemmatizer = WordNetLemmatizer()
+
 
 def clean_and_lemmatize(text):
     """
@@ -15,8 +17,11 @@ def clean_and_lemmatize(text):
     # Convert to lowercase, remove punctuation, and lemmatize words
     text = text.lower()
     text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+
     words = text.split()
     lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
+
+    #print(lemmatized_words)
     return ' '.join(lemmatized_words)
 
 def filter_keywords_by_pos(keywords):
@@ -37,6 +42,7 @@ def extract_special_keywords(text, max_features=20):
     """
     Extracts the top keywords from a given text using TF-IDF with POS filtering.
     """
+
     vectorizer = TfidfVectorizer(stop_words='english', max_features=max_features)
     tfidf_matrix = vectorizer.fit_transform([text])
     
@@ -81,12 +87,15 @@ def generate_comparison_feedback(matching_keywords, missing_keywords, resume_sum
     return feedback
 
 def analyze_resume(resume_text, job_description):
+
     # Clean and lemmatize both resume text and job description
     cleaned_resume = clean_and_lemmatize(resume_text)
     cleaned_job_description = clean_and_lemmatize(job_description)
 
     # Extract keywords from cleaned and lemmatized texts
     job_keywords = extract_special_keywords(cleaned_job_description)
+
+
     #resume_keywords = extract_special_keywords(cleaned_resume)
     resume_keywords = set(cleaned_resume.split(" "))
     resume_keywords2 = extract_special_keywords(cleaned_resume)
@@ -94,10 +103,12 @@ def analyze_resume(resume_text, job_description):
     # Find matching and missing keywords
     matching_keywords = job_keywords.intersection(resume_keywords)
     missing_keywords = job_keywords.difference(resume_keywords)
+
     
     # Calculate similarity score using cleaned text
     vectorizer = TfidfVectorizer(stop_words='english')
     tfidf_matrix = vectorizer.fit_transform([cleaned_resume, cleaned_job_description])
+
     
     """
     if tfidf_matrix.shape[1] > 0:
