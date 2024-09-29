@@ -76,13 +76,18 @@ def generate_comparison_feedback(matching_keywords, missing_keywords, resume_sum
     
     # Highlight similarities
     if matching_keywords:
-        feedback.append(f"Similarities: Your resume matches important areas mentioned in the job description, such as {', '.join(matching_keywords[:5])}. This shows that you have relevant experience in key areas.")
+        feedback.append(f"Similarities: Your resume matches important areas mentioned in the job description, 
+                        such as {', '.join(matching_keywords[:5])}. This shows that you have relevant experience 
+                        in key areas.")
     else:
-        feedback.append("Similarities: There are no significant overlaps between your resume and the job description in terms of keywords.")
+        feedback.append(f"Similarities: There are no significant overlaps between your resume and the job 
+                        description in terms of keywords.")
     
     # Highlight differences
     if missing_keywords:
-        feedback.append(f"Differences: However, the job description emphasizes some areas that are missing from your resume, including {', '.join(missing_keywords[:5])}. Consider adding more details about these topics to better align with the job requirements.")
+        feedback.append(f"Differences: However, the job description emphasizes some areas that are missing 
+                        from your resume, including {', '.join(missing_keywords[:5])}. Consider 
+                        adding more details about these topics to better align with the job requirements.")
     
     return feedback
 
@@ -128,7 +133,10 @@ def analyze_resume(resume_text, job_description):
     resume_summary = summarize_text(list(resume_keywords2), "resume")
 
     # Generate comparison feedback
-    comparison_feedback = generate_comparison_feedback(list(matching_keywords), list(missing_keywords), resume_summary, job_summary)
+    comparison_feedback = generate_comparison_feedback(list(matching_keywords), 
+                                                       list(missing_keywords), 
+                                                       resume_summary, 
+                                                       job_summary)
 
     return {
         "similarity": similarity,
