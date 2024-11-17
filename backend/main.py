@@ -5,6 +5,7 @@ from typing import List
 import os
 from utils.file_parsers import extract_text_from_pdf, extract_text_from_docx
 from utils.nlp_utils import analyze_resume
+from mangum import Mangum
 
 app = FastAPI()
 
@@ -49,6 +50,6 @@ async def analyze_resume_endpoint(request: AnalyzeResumeRequest):
     return analysis_result
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="127.0.0.1", port=8000)
