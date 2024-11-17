@@ -11,7 +11,8 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Assuming React is running on localhost:3000
+    allow_origins=["http://localhost:3000", "resume-analyzer-cml33wctt-husain-wafaies-projects.vercel.app",
+                   "https://resume-analyzer-blush.vercel.app/"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
