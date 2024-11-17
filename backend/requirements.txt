@@ -9,4 +9,4 @@ spacy==3.7.6
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 uvicorn==0.30.6
-magnum==0.19.0
+mangum==0.19.0
